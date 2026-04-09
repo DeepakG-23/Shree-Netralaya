@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  
+  --color-ink: #0b1d33;
+  --color-ink-light: #1e3a56;
+  --color-teal-primary: #0a7c6e;
+  --color-teal-hover: #0d9e8c;
+  --color-gold-primary: #c49a3c;
+  --color-gold-light: #e0b84e;
+  --color-cream: #f5f2ec;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply font-sans bg-cream text-ink antialiased overflow-x-hidden;
+  }
+}
+
+@layer utilities {
+  .marquee-track {
+    display: flex;
+    gap: 3.5rem;
+    width: max-content;
+    animation: marquee 40s linear infinite;
+    white-space: nowrap;
+  }
+
+  .marquee-track-reverse {
+    display: flex;
+    gap: 3.5rem;
+    width: max-content;
+    animation: marquee-reverse 40s linear infinite;
+    white-space: nowrap;
+  }
+  
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  @keyframes marquee-reverse {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+}
+
