@@ -11,10 +11,22 @@ import {
   Star, 
   ArrowRight, 
   CheckCircle2,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react';
 
 import { ASSETS } from './assets-config';
+import { db } from './firebase';
+import { 
+  collection, 
+  addDoc, 
+  doc, 
+  setDoc, 
+  onSnapshot, 
+  increment, 
+  runTransaction,
+  serverTimestamp 
+} from 'firebase/firestore';
 
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -25,6 +37,92 @@ export default function App() {
 
   const [selectedService, setSelectedService] = useState<any>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string>('');
+  const [slotCounts, setSlotCounts] = useState<Record<string, number>>({});
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [activeCampaign, setActiveCampaign] = useState<any>(null);
+  const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
+
+  const galleryItems = [
+    { img: ASSETS.clinic.gallery1, label: 'Clinic Facility' },
+    { img: ASSETS.clinic.gallery2, label: 'Advanced Care' },
+    { img: ASSETS.clinic.gallery3, label: 'Modern Equipment' },
+    { img: ASSETS.clinic.gallery4, label: 'Patient Care' },
+    { img: ASSETS.clinic.gallery5, label: 'Our Team' }
+  ];
+
+  const nextGallery = () => {
+    setCurrentGalleryIndex((prev) => (prev + 1) % galleryItems.length);
+  };
+
+  const prevGallery = () => {
+    setCurrentGalleryIndex((prev) => (prev - 1 + galleryItems.length) % galleryItems.length);
+  };
+
+  const TIME_SLOTS = [
+    '10:00 AM – 11:00 AM',
+    '11:00 AM – 12:00 PM',
+    '2:00 PM – 3:00 PM',
+    '3:00 PM – 4:00 PM',
+    '4:00 PM – 5:00 PM',
+    '5:00 PM – 6:00 PM',
+    '6:00 PM – 7:00 PM'
+  ];
+
+  const isSlotPast = (slot: string, date: string) => {
+    if (!date) return false;
+    const now = new Date();
+    const selected = new Date(date);
+    
+    // Check if it's a past date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selected < today) return true;
+    
+    // If it's not today, it's not past (since we already checked for past dates)
+    if (selected.toDateString() !== now.toDateString()) return false;
+
+    // It's today, check the time
+    const [timeStr] = slot.split(' – ');
+    const [time, modifier] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+
+    if (modifier === 'PM' && hours < 12) hours += 12;
+    if (modifier === 'AM' && hours === 12) hours = 0;
+
+    const slotTime = new Date();
+    slotTime.setHours(hours, minutes, 0, 0);
+
+    return now > slotTime;
+  };
+
+  useEffect(() => {
+    // Real-time listener for slot counts
+    const unsubscribeSlots = onSnapshot(collection(db, 'slots'), (snapshot) => {
+      const counts: Record<string, number> = {};
+      snapshot.forEach((doc) => {
+        counts[doc.id] = doc.data().count || 0;
+      });
+      setSlotCounts(counts);
+    });
+
+    // Real-time listener for active campaigns
+    const unsubscribeCampaigns = onSnapshot(collection(db, 'campaigns'), (snapshot) => {
+      const campaigns: any[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.isActive) {
+          campaigns.push({ id: doc.id, ...data });
+        }
+      });
+      // Pick the first active campaign for now
+      setActiveCampaign(campaigns.length > 0 ? campaigns[0] : null);
+    });
+
+    return () => {
+      unsubscribeSlots();
+      unsubscribeCampaigns();
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,7 +141,6 @@ export default function App() {
     const message = `*New Appointment Request - Shree Netralaya*\n\n` +
       `*Name:* ${data.firstName} ${data.lastName}\n` +
       `*Phone:* ${data.phone}\n` +
-      `*Service:* ${data.service}\n` +
       `*Date:* ${data.date}\n` +
       `*Time:* ${data.time}\n` +
       `*Notes:* ${data.notes || 'None'}\n\n` +
@@ -54,49 +151,93 @@ export default function App() {
     setWhatsappUrl(url);
 
     try {
-      const response = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+      const selectedTime = data.time as string;
+      
+      // Use a transaction to ensure atomic update and check limit
+      await runTransaction(db, async (transaction) => {
+        const slotRef = doc(db, 'slots', selectedTime);
+        const slotDoc = await transaction.get(slotRef);
+        
+        const currentCount = slotDoc.exists() ? slotDoc.data().count : 0;
+        
+        if (currentCount >= 2) {
+          throw new Error('This slot is already full. Please select another time.');
+        }
+        
+        // Add appointment doc
+        const appointmentRef = doc(collection(db, 'appointments'));
+        transaction.set(appointmentRef, {
+          ...data,
+          createdAt: new Date().toISOString(),
+          timestamp: serverTimestamp()
+        });
+        
+        // Increment slot count
+        if (!slotDoc.exists()) {
+          transaction.set(slotRef, { count: 1 });
+        } else {
+          transaction.update(slotRef, { count: increment(1) });
+        }
       });
 
-      if (response.ok) {
-        setFormSubmitted(true);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3500);
-        
-        // Redirect to WhatsApp after a brief delay to show success state
-        setTimeout(() => {
-          window.open(url, '_blank');
-        }, 1000);
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      // Fallback to WhatsApp even if API fails
       setFormSubmitted(true);
-      window.open(url, '_blank');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3500);
+      
+      // Redirect to WhatsApp after a brief delay to show success state
+      setTimeout(() => {
+        window.open(url, '_blank');
+      }, 1000);
+    } catch (error: any) {
+      console.error('Error submitting form:', error);
+      alert(error.message || 'Something went wrong. Please try again.');
     }
   };
 
   return (
     <div className="min-h-screen">
+      {/* Campaign Banner */}
+      <AnimatePresence>
+        {activeCampaign && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-teal-primary text-white py-2.5 px-[5%] text-center relative z-[60] overflow-hidden"
+          >
+            <div className="flex items-center justify-center gap-3 text-[13px] font-bold tracking-wide">
+              <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] uppercase">Special Event</span>
+              <p>{activeCampaign.title}</p>
+              {activeCampaign.buttonLink && (
+                <a 
+                  href={activeCampaign.buttonLink}
+                  className="underline hover:text-white/80 transition-colors ml-2"
+                >
+                  {activeCampaign.buttonText || 'Learn More'} →
+                </a>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 px-[5%] h-[72px] flex items-center justify-between transition-all duration-400 ${isScrolled ? 'bg-ink/97 border-b border-white/8 backdrop-blur-xl' : 'bg-transparent border-b border-transparent'}`}>
-        <a href="#" className="font-serif text-xl text-white font-bold flex items-center gap-2.5 tracking-tight">
-          <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <nav className={`fixed top-0 left-0 right-0 z-50 px-[5%] transition-all duration-500 flex items-center justify-between ${isScrolled ? 'h-[64px] bg-white/95 border-b border-ink/5 backdrop-blur-md shadow-sm' : 'h-[88px] bg-transparent border-b border-transparent'}`}>
+        <a href="#" className={`font-serif text-xl font-bold flex items-center gap-2.5 tracking-tight transition-colors duration-300 ${isScrolled ? 'text-ink' : 'text-white'}`}>
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden transition-all duration-300 ${isScrolled ? 'bg-teal-primary/5' : 'bg-white'}`}>
             {ASSETS.logo.url ? (
               <img src={ASSETS.logo.url} alt="Logo" className="w-full h-full object-contain" />
             ) : (
-              <Eye className="text-teal-primary w-5 h-5" />
+              <Eye className={`${isScrolled ? 'text-teal-primary' : 'text-teal-primary'} w-5 h-5`} />
             )}
           </div>
           Shree Netralaya
         </a>
 
-        <ul className="hidden md:flex gap-7 list-none">
+        <ul className="hidden md:flex gap-8 list-none">
           {['Services', 'About', 'Gallery', 'Doctors', 'Reviews', 'Contact'].map((item) => (
             <li key={item}>
-              <a href={`#${item.toLowerCase()}`} className="text-white/70 hover:text-white text-[13px] font-medium tracking-widest uppercase transition-colors duration-200">
+              <a href={`#${item.toLowerCase()}`} className={`text-[13px] font-bold tracking-widest uppercase transition-all duration-300 hover:text-teal-primary ${isScrolled ? 'text-ink/70' : 'text-white/80'}`}>
                 {item}
               </a>
             </li>
@@ -105,12 +246,12 @@ export default function App() {
 
         <button 
           onClick={() => document.getElementById('book')?.scrollIntoView({ behavior: 'smooth' })}
-          className="hidden md:block bg-teal-primary hover:bg-teal-hover text-white px-6 py-2.5 rounded font-semibold text-[13px] tracking-wider transition-all duration-200 hover:-translate-y-px"
+          className={`hidden md:block px-7 py-2.5 rounded font-bold text-[12px] tracking-wider uppercase transition-all duration-300 hover:-translate-y-0.5 ${isScrolled ? 'bg-teal-primary text-white shadow-md shadow-teal-primary/20' : 'bg-white text-teal-primary'}`}
         >
           Book Appointment
         </button>
 
-        <button className="md:hidden text-white p-1" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        <button className={`md:hidden p-1 transition-colors duration-300 ${isScrolled ? 'text-ink' : 'text-white'}`} onClick={() => setIsMenuOpen(!isMenuOpen)}>
           {isMenuOpen ? <X /> : <Menu />}
         </button>
       </nav>
@@ -154,6 +295,34 @@ export default function App() {
 
       {/* Hero Section */}
       <section id="hero" className="min-h-screen relative flex items-center overflow-hidden">
+        {/* Campaign Mode Indicator */}
+        {activeCampaign && (
+          <div className="absolute top-32 right-10 z-20 hidden lg:block">
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl max-w-[300px] shadow-2xl"
+            >
+              {activeCampaign.imageUrl && (
+                <img 
+                  src={activeCampaign.imageUrl} 
+                  alt="Campaign" 
+                  className="w-full h-40 object-cover rounded-lg mb-4"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+              <h4 className="text-white font-serif text-lg font-bold mb-2">{activeCampaign.title}</h4>
+              <p className="text-white/60 text-xs leading-relaxed mb-4">{activeCampaign.description}</p>
+              <button 
+                onClick={() => document.getElementById('book')?.scrollIntoView({ behavior: 'smooth' })}
+                className="w-full bg-teal-primary text-white py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest"
+              >
+                {activeCampaign.buttonText || 'Register Now'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+
         <div className="absolute inset-0 bg-gradient-to-br from-[#071524] via-[#0e2640] to-[#0a3d52]"></div>
         <div 
           className="absolute inset-0 opacity-18 mix-blend-luminosity bg-center bg-cover no-repeat"
@@ -455,33 +624,65 @@ export default function App() {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          <div 
-            className="col-span-2 row-span-2 rounded overflow-hidden relative cursor-pointer group h-[200px] md:h-[380px]"
-            onClick={() => setActiveLightbox(ASSETS.clinic.gallery1)}
-          >
-            <img src={ASSETS.clinic.gallery1} className="w-full h-full object-cover transition-all duration-500 group-hover:scale-106 saturate-[0.7] group-hover:saturate-100" />
-            <div className="absolute inset-0 bg-teal-primary/0 group-hover:bg-teal-primary/25 flex items-end p-4 transition-all duration-300">
-              <span className="text-[12px] text-white font-semibold tracking-wider opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">Clinic Facility</span>
-            </div>
-          </div>
-          {[
-            { img: ASSETS.clinic.gallery2, label: 'Advanced Care' },
-            { img: ASSETS.clinic.gallery3, label: 'Modern Equipment' },
-            { img: ASSETS.clinic.gallery4, label: 'Patient Care' },
-            { img: ASSETS.clinic.gallery5, label: 'Our Team' }
-          ].map((item, i) => (
-            <div 
-              key={i} 
-              className="rounded overflow-hidden relative cursor-pointer group h-[140px] md:h-[180px]"
-              onClick={() => setActiveLightbox(item.img)}
+        <div className="relative group max-w-5xl mx-auto">
+          <div className="overflow-hidden rounded-2xl aspect-[16/9] md:aspect-[21/9] relative shadow-2xl">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentGalleryIndex}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="w-full h-full cursor-pointer"
+                onClick={() => setActiveLightbox(galleryItems[currentGalleryIndex].img)}
+              >
+                <img 
+                  src={galleryItems[currentGalleryIndex].img} 
+                  alt={galleryItems[currentGalleryIndex].label}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/20 to-transparent flex items-end p-8 md:p-12">
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="bg-teal-primary text-white text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded inline-block mb-3">
+                      Visual Tour
+                    </div>
+                    <h3 className="text-white font-serif text-2xl md:text-3xl font-bold">
+                      {galleryItems[currentGalleryIndex].label}
+                    </h3>
+                  </motion.div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Navigation Controls */}
+            <button 
+              onClick={(e) => { e.stopPropagation(); prevGallery(); }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-teal-primary transition-all duration-300 z-10 opacity-0 group-hover:opacity-100"
             >
-              <img src={item.img} className="w-full h-full object-cover transition-all duration-500 group-hover:scale-106 saturate-[0.7] group-hover:saturate-100" />
-              <div className="absolute inset-0 bg-teal-primary/0 group-hover:bg-teal-primary/25 flex items-end p-4 transition-all duration-300">
-                <span className="text-[12px] text-white font-semibold tracking-wider opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">{item.label}</span>
-              </div>
-            </div>
-          ))}
+              <ChevronLeft size={24} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); nextGallery(); }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-teal-primary transition-all duration-300 z-10 opacity-0 group-hover:opacity-100"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </div>
+
+          {/* Indicators */}
+          <div className="flex justify-center gap-3 mt-8">
+            {galleryItems.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentGalleryIndex(i)}
+                className={`h-1.5 transition-all duration-300 rounded-full ${i === currentGalleryIndex ? 'w-8 bg-teal-primary' : 'w-2 bg-white/20 hover:bg-white/40'}`}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -675,44 +876,51 @@ export default function App() {
                     <input name="firstName" required type="text" placeholder="Rahul" className="border-[1.5px] border-ink/10 rounded p-3 text-sm font-sans text-ink bg-cream outline-none focus:border-teal-primary focus:ring-3 focus:ring-teal-primary/12 transition-all" />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-semibold tracking-wider uppercase text-ink/60">Last Name</label>
+                    <label className="text-[11px] font-semibold tracking-wider uppercase text-ink/60">Last Name <span className="text-red-500">*</span></label>
                     <input name="lastName" required type="text" placeholder="Sharma" className="border-[1.5px] border-ink/10 rounded p-3 text-sm font-sans text-ink bg-cream outline-none focus:border-teal-primary focus:ring-3 focus:ring-teal-primary/12 transition-all" />
                   </div>
                 </div>
                 
                 <div className="flex flex-col gap-1.5 mb-3.5">
-                  <label className="text-[11px] font-semibold tracking-wider uppercase text-ink/60">Mobile Number</label>
-                  <input name="phone" required type="tel" placeholder="+91 98765 43210" className="border-[1.5px] border-ink/10 rounded p-3 text-sm font-sans text-ink bg-cream outline-none focus:border-teal-primary focus:ring-3 focus:ring-teal-primary/12 transition-all" />
+                  <label className="text-[11px] font-semibold tracking-wider uppercase text-ink/60">Mobile Number <span className="text-red-500">*</span></label>
+                  <input name="phone" required type="tel" pattern="[0-9]{10}" placeholder="9876543210" className="border-[1.5px] border-ink/10 rounded p-3 text-sm font-sans text-ink bg-cream outline-none focus:border-teal-primary focus:ring-3 focus:ring-teal-primary/12 transition-all" />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-3.5">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-semibold tracking-wider uppercase text-ink/60">Preferred Date</label>
-                    <input name="date" required type="date" className="border-[1.5px] border-ink/10 rounded p-3 text-sm font-sans text-ink bg-cream outline-none focus:border-teal-primary focus:ring-3 focus:ring-teal-primary/12 transition-all" />
+                    <label className="text-[11px] font-semibold tracking-wider uppercase text-ink/60">Preferred Date <span className="text-red-500">*</span></label>
+                    <input 
+                      name="date" 
+                      required 
+                      type="date" 
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="border-[1.5px] border-ink/10 rounded p-3 text-sm font-sans text-ink bg-cream outline-none focus:border-teal-primary focus:ring-3 focus:ring-teal-primary/12 transition-all" 
+                    />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-semibold tracking-wider uppercase text-ink/60">Preferred Time</label>
+                    <label className="text-[11px] font-semibold tracking-wider uppercase text-ink/60">Preferred Time <span className="text-red-500">*</span></label>
                     <select name="time" required className="border-[1.5px] border-ink/10 rounded p-3 text-sm font-sans text-ink bg-cream outline-none focus:border-teal-primary focus:ring-3 focus:ring-teal-primary/12 transition-all">
                       <option value="">Select Time</option>
-                      <option>9:00 AM – 10:00 AM</option>
-                      <option>10:00 AM – 11:00 AM</option>
-                      <option>11:00 AM – 12:00 PM</option>
-                      <option>2:00 PM – 3:00 PM</option>
-                      <option>4:00 PM – 5:00 PM</option>
+                      {TIME_SLOTS.map(slot => {
+                        const count = slotCounts[slot] || 0;
+                        const isFull = count >= 2;
+                        const isPast = isSlotPast(slot, selectedDate);
+                        const isDisabled = isFull || isPast;
+                        
+                        let label = slot;
+                        if (isFull) label += ' (No Booking Available)';
+                        else if (isPast) label += ' (Past Time)';
+
+                        return (
+                          <option key={slot} value={slot} disabled={isDisabled} className={isDisabled ? 'text-slate-400 bg-slate-100' : ''}>
+                            {label}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
-                </div>
-                
-                <div className="flex flex-col gap-1.5 mb-3.5">
-                  <label className="text-[11px] font-semibold tracking-wider uppercase text-ink/60">Service Required</label>
-                  <select name="service" required className="border-[1.5px] border-ink/10 rounded p-3 text-sm font-sans text-ink bg-cream outline-none focus:border-teal-primary focus:ring-3 focus:ring-teal-primary/12 transition-all">
-                    <option value="">Select a Service</option>
-                    <option>Comprehensive Eye Exam</option>
-                    <option>Cataract Surgery</option>
-                    <option>LASIK / Smile Pro</option>
-                    <option>Retina Consultation</option>
-                    <option>Glaucoma Check</option>
-                  </select>
                 </div>
                 
                 <div className="flex flex-col gap-1.5 mb-7">

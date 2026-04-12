@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "appointment": {
+      "title": "Appointment",
+      "description": "An appointment booking request",
+      "type": "object",
+      "properties": {
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "phone": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["firstName", "lastName", "phone", "date", "time"]
+    },
+    "slotCount": {
+      "title": "Slot Count",
+      "description": "Tracks the number of bookings for a specific time slot",
+      "type": "object",
+      "properties": {
+        "count": { "type": "number" }
+      },
+      "required": ["count"]
+    },
+    "campaign": {
+      "title": "Campaign",
+      "description": "A marketing campaign or event",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "buttonText": { "type": "string" },
+        "buttonLink": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" }
+      },
+      "required": ["title", "isActive"]
+    }
+  },
+  "firestore": {
+    "/appointments/{appointmentId}": {
+      "schema": "appointment",
+      "description": "Collection of all appointment requests"
+    },
+    "/slots/{slotId}": {
+      "schema": "slotCount",
+      "description": "Tracks booking counts for time slots (slotId is the time string)"
+    },
+    "/campaigns/{campaignId}": {
+      "schema": "campaign",
+      "description": "Collection of marketing campaigns"
+    }
+  }
+}

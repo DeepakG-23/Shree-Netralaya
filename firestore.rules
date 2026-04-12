@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: appointments
+    // Fields:
+    //   - firstName: string (required)
+    //   - lastName: string (required)
+    //   - phone: string (required, 10 digits)
+    //   - date: string (required, ISO date)
+    //   - time: string (required, slot string)
+    //   - notes: string (optional)
+    //   - createdAt: string (required, ISO date-time)
+    //
+    // Collection: slots
+    // Document ID: time slot string (e.g., "9:00 AM – 10:00 AM")
+    // Fields:
+    //   - count: number (required, max 2)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['firstName', 'lastName', 'phone', 'date', 'time', 'createdAt']) &&
+             data.firstName is string && data.firstName.size() > 0 && data.firstName.size() < 50 &&
+             data.lastName is string && data.lastName.size() > 0 && data.lastName.size() < 50 &&
+             data.phone is string && data.phone.matches('^[0-9]{10}$') &&
+             data.date is string && data.time is string &&
+             data.createdAt is string;
+    }
+
+    function isValidSlot(data) {
+      return data.keys().hasAll(['count']) &&
+             data.count is number && data.count >= 0 && data.count <= 2;
+    }
+
+    // Rules
+    match /appointments/{appointmentId} {
+      // Allow creation of appointments for anyone (public booking)
+      // In a real app, you might want to restrict this or use a backend function
+      allow create: if isValidAppointment(request.resource.data);
+      // Only admins can read/list appointments
+      allow read, list: if isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         request.auth.token.email == "deepakpanditgaikwad2004@gmail.com");
+    }
+
+    match /slots/{slotId} {
+      // Anyone can read slot counts to see availability
+      allow read: if true;
+      // Anyone can increment slot count if it's < 2
+      allow create, update: if request.resource.data.count <= 2 &&
+                               (resource == null || request.resource.data.count == resource.data.count + 1);
+    }
+    
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /campaigns/{campaignId} {
+      // Anyone can read active campaigns
+      allow read, list: if true;
+      // Only admins can write campaigns
+      allow write: if isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         request.auth.token.email == "deepakpanditgaikwad2004@gmail.com");
+    }
+  }
+}
