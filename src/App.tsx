@@ -226,7 +226,7 @@ export default function App() {
         <a href="#" className={`font-serif text-xl font-bold flex items-center gap-2.5 tracking-tight transition-colors duration-300 ${isScrolled ? 'text-ink' : 'text-white'}`}>
           <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden transition-all duration-300 ${isScrolled ? 'bg-teal-primary/5' : 'bg-white'}`}>
             {ASSETS.logo.url ? (
-              <img src={ASSETS.logo.url} alt="Logo" className="w-full h-full object-contain" />
+              <img src={ASSETS.logo.url} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             ) : (
               <Eye className={`${isScrolled ? 'text-teal-primary' : 'text-teal-primary'} w-5 h-5`} />
             )}
@@ -470,6 +470,7 @@ export default function App() {
                   className="w-full h-full object-cover saturate-[0.8] group-hover:saturate-100"
                   whileHover={{ scale: 1.1 }}
                   transition={{ duration: 0.6 }}
+                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
                 <div className="absolute bottom-4 left-6">
@@ -517,7 +518,7 @@ export default function App() {
               
               <div className="grid grid-cols-1 md:grid-cols-2">
                 <div className="h-[300px] md:h-full relative">
-                  <img src={selectedService.img} alt={selectedService.name} className="w-full h-full object-cover" />
+                  <img src={selectedService.img} alt={selectedService.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   <div className="absolute inset-0 bg-gradient-to-t from-ink/60 to-transparent"></div>
                   <div className="absolute bottom-8 left-8">
                     <div className="text-white/70 text-[11px] font-bold uppercase tracking-widest mb-2">{selectedService.category}</div>
@@ -562,13 +563,13 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-18 items-center">
           <div className="hidden lg:grid grid-cols-2 grid-rows-2 gap-3 relative">
             <div className="col-span-1 row-span-2 rounded overflow-hidden h-[440px]">
-              <img src={ASSETS.clinic.reception} className="w-full h-full object-cover hover:scale-105 transition-transform duration-600" />
+              <img src={ASSETS.clinic.reception} className="w-full h-full object-cover hover:scale-105 transition-transform duration-600" referrerPolicy="no-referrer" />
             </div>
             <div className="rounded overflow-hidden h-[210px]">
-              <img src={ASSETS.clinic.consultation} className="w-full h-full object-cover hover:scale-105 transition-transform duration-600" />
+              <img src={ASSETS.clinic.consultation} className="w-full h-full object-cover hover:scale-105 transition-transform duration-600" referrerPolicy="no-referrer" />
             </div>
             <div className="rounded overflow-hidden h-[210px]">
-              <img src={ASSETS.clinic.equipment} className="w-full h-full object-cover hover:scale-105 transition-transform duration-600" />
+              <img src={ASSETS.clinic.equipment} className="w-full h-full object-cover hover:scale-105 transition-transform duration-600" referrerPolicy="no-referrer" />
             </div>
             <div className="absolute -bottom-4 -left-4 bg-teal-primary text-white rounded p-5 z-10">
               <div className="font-serif text-[40px] font-bold leading-none">2003</div>
@@ -640,6 +641,7 @@ export default function App() {
                   src={galleryItems[currentGalleryIndex].img} 
                   alt={galleryItems[currentGalleryIndex].label}
                   className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/20 to-transparent flex items-end p-8 md:p-12">
                   <motion.div
@@ -706,6 +708,7 @@ export default function App() {
                 }}
                 alt="Dr. Swati Jadhav" 
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                referrerPolicy="no-referrer"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/40 to-transparent opacity-60"></div>
               <div className="absolute bottom-6 left-6 right-6">
@@ -1035,7 +1038,7 @@ export default function App() {
             <a href="#" className="font-serif text-xl text-white font-bold flex items-center gap-2.5 tracking-tight mb-3.5">
             <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
               {ASSETS.logo.url ? (
-                <img src={ASSETS.logo.url} alt="Logo" className="w-full h-full object-contain" />
+                <img src={ASSETS.logo.url} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
               ) : (
                 <Eye className="text-teal-primary w-5 h-5" />
               )}
@@ -1100,7 +1103,7 @@ export default function App() {
               >
                 <X size={18} />
               </button>
-              <img src={activeLightbox} className="w-full h-full object-contain rounded" />
+              <img src={activeLightbox} className="w-full h-full object-contain rounded" referrerPolicy="no-referrer" />
             </div>
           </motion.div>
         )}

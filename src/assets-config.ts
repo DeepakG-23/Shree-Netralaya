@@ -22,7 +22,7 @@ export const ASSETS = {
 
   // Services Photos
   services: {
-    diagnostics: "/images/vision testing.jpg",
+    diagnostics: "/images/vision-testing.jpg",
     cataract: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&q=70",
     lasik: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&q=70",
     retina: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=600&q=70",
@@ -38,8 +38,8 @@ export const ASSETS = {
     equipment: "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=500&q=70",
     gallery1: "/images/2026-02-06.webp",
     gallery2: "/images/2026-02-07.webp",
-    gallery3: "/images/2026-02-06 (1).webp",
-    gallery4: "/images/2026-02-07 (1).webp",
+    gallery3: "/images/2026-02-06-1.webp",
+    gallery4: "/images/2026-02-07-1.webp",
     gallery5: "/images/5109.jpg"
   }
 };
