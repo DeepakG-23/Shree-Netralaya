@@ -372,7 +372,7 @@ export default function App() {
               <div className="text-[12px] text-white/45 tracking-widest uppercase mt-1">Years of Excellence</div>
             </div>
             <div>
-              <div className="font-serif text-[40px] font-bold text-gold-light leading-none">2k+</div>
+              <div className="font-serif text-[40px] font-bold text-gold-light leading-none">5K+</div>
               <div className="text-[12px] text-white/45 tracking-widest uppercase mt-1">Surgeries Performed</div>
             </div>
             <div>
@@ -599,7 +599,7 @@ export default function App() {
               A Decade of Transforming Lives Through Vision
             </h2>
             <p className="text-slate-500 text-[15px] leading-[1.85] mb-3">
-              Shree Netralaya was established in 2016 with a single mission: to make world-class eye care accessible to every family in Marathwada. Today, under the expert leadership of Dr. Swati Jadhav, we are Aurangabad's most trusted ophthalmology centre with over 2,000 successful surgeries.
+              Shree Netralaya was established in 2016 with a single mission: to make world-class eye care accessible to every family in Marathwada. Today, under the expert leadership of Dr. Swati Jadhav, we are Aurangabad's most trusted ophthalmology centre with over 5,000 successful surgeries.
             </p>
             <p className="text-slate-500 text-[15px] leading-[1.85]">
               Dr. Jadhav, a Gold Medalist from GMC Nagpur and trained at the prestigious Aravind Eye Hospital, brings a decade of surgical excellence. Our state-of-the-art facility is matched only by her warmth and dedication to patient care.
