@@ -605,23 +605,7 @@ export default function App() {
               Dr. Jadhav, a Gold Medalist from GMC Nagpur and trained at the prestigious Aravind Eye Hospital, brings a decade of surgical excellence. Our state-of-the-art facility is matched only by her warmth and dedication to patient care.
             </p>
             
-            <div className="mt-7 flex flex-col gap-4">
-              {[
-                { icon: '🏥', title: 'NABH Accredited Facility', desc: 'Meeting the highest national standards for hospital safety, hygiene, and patient care protocols.' },
-                { icon: '🔬', title: 'Advanced Technology', desc: 'Zeiss OCT, Alcon Centurion, Schwind Amaris 1050RS laser — equipment trusted globally.' },
-                { icon: '💳', title: 'Cashless Insurance', desc: 'Empanelled with all major TPA providers including Star Health, New India, and CGHS.' }
-              ].map((item, i) => (
-                <div key={i} className="flex gap-3.5 items-start">
-                  <div className="w-9 h-9 rounded-lg bg-teal-primary/10 flex items-center justify-center flex-shrink-0 text-teal-primary text-base mt-0.5">
-                    {item.icon}
-                  </div>
-                  <div>
-                    <strong className="block text-ink text-sm font-semibold mb-0.5">{item.title}</strong>
-                    <span className="text-slate-500 text-[13px] leading-[1.65]">{item.desc}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+
           </div>
         </div>
       </section>
