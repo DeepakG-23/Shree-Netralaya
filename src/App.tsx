@@ -226,7 +226,21 @@ export default function App() {
         <a href="#" className={`font-serif text-xl font-bold flex items-center gap-2.5 tracking-tight transition-colors duration-300 ${isScrolled ? 'text-ink' : 'text-white'}`}>
           <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden transition-all duration-300 ${isScrolled ? 'bg-teal-primary/5' : 'bg-white'}`}>
             {ASSETS.logo.url ? (
-              <img src={ASSETS.logo.url} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+              <img 
+                src={ASSETS.logo.url} 
+                alt="Logo" 
+                className="w-full h-full object-contain" 
+                referrerPolicy="no-referrer" 
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  const parent = (e.target as HTMLImageElement).parentElement;
+                  if (parent) {
+                    const icon = document.createElement('div');
+                    icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye text-teal-primary"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+                    parent.appendChild(icon.firstChild as Node);
+                  }
+                }}
+              />
             ) : (
               <Eye className={`${isScrolled ? 'text-teal-primary' : 'text-teal-primary'} w-5 h-5`} />
             )}
@@ -334,14 +348,14 @@ export default function App() {
         <div className="relative z-10 px-[5%] pt-[120px] pb-20 max-w-[680px]">
           <div className="inline-flex items-center gap-2 bg-teal-primary/20 border border-teal-primary/40 text-teal-hover text-[12px] font-semibold tracking-[0.1em] uppercase px-4 py-1.5 rounded-full mb-7">
             <span className="w-1.5 h-1.5 bg-teal-hover rounded-full animate-pulse"></span>
-            Aurangabad's Premier Eye Care Centre
+            10+ Years of Excellence · Aurangabad's Premier Eye Care
           </div>
           <h1 className="font-serif text-[clamp(42px,6vw,72px)] font-bold text-white leading-[1.1] mb-6">
             See The World<br />
             <span className="text-transparent italic [-webkit-text-stroke:1px_var(--color-gold-light)] block">In Perfect Clarity.</span>
           </h1>
           <p className="text-white/60 text-base font-light leading-[1.85] max-w-[500px] mb-10">
-            At Shree Netralaya, we fuse cutting-edge ophthalmic technology with decades of surgical expertise — delivering vision care that truly transforms lives.
+            At Shree Netralaya, we fuse cutting-edge ophthalmic technology with over a decade of surgical expertise — delivering vision care that truly transforms lives.
           </p>
           <div className="flex flex-wrap gap-3.5">
             <a href="#book" className="bg-teal-primary hover:bg-teal-hover text-white px-8 py-3.5 rounded font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(10,124,110,0.4)]">
@@ -354,16 +368,16 @@ export default function App() {
           
           <div className="flex flex-wrap gap-12 mt-15 pt-12 border-t border-white/10">
             <div>
-              <div className="font-serif text-[40px] font-bold text-gold-light leading-none">22+</div>
+              <div className="font-serif text-[40px] font-bold text-gold-light leading-none">10+</div>
               <div className="text-[12px] text-white/45 tracking-widest uppercase mt-1">Years of Excellence</div>
             </div>
             <div>
-              <div className="font-serif text-[40px] font-bold text-gold-light leading-none">18K+</div>
+              <div className="font-serif text-[40px] font-bold text-gold-light leading-none">2k+</div>
               <div className="text-[12px] text-white/45 tracking-widest uppercase mt-1">Surgeries Performed</div>
             </div>
             <div>
               <div className="font-serif text-[40px] font-bold text-gold-light leading-none">6</div>
-              <div className="text-[12px] text-white/45 tracking-widest uppercase mt-1">Super Specialists</div>
+              <div className="text-[12px] text-white/45 tracking-widest uppercase mt-1">Super Specialities</div>
             </div>
           </div>
         </div>
@@ -572,7 +586,7 @@ export default function App() {
               <img src={ASSETS.clinic.equipment} className="w-full h-full object-cover hover:scale-105 transition-transform duration-600" referrerPolicy="no-referrer" />
             </div>
             <div className="absolute -bottom-4 -left-4 bg-teal-primary text-white rounded p-5 z-10">
-              <div className="font-serif text-[40px] font-bold leading-none">2003</div>
+              <div className="font-serif text-[40px] font-bold leading-none">2016</div>
               <div className="text-[12px] opacity-80 mt-1">Founded in Aurangabad</div>
             </div>
           </div>
@@ -582,10 +596,10 @@ export default function App() {
               Our Story
             </div>
             <h2 className="font-serif text-[clamp(28px,4vw,46px)] font-bold text-ink leading-[1.2] mb-3.5">
-              Two Decades of Transforming Lives Through Vision
+              A Decade of Transforming Lives Through Vision
             </h2>
             <p className="text-slate-500 text-[15px] leading-[1.85] mb-3">
-              Shree Netralaya was established in 2003 with a single mission: to make world-class eye care accessible to every family in Marathwada. Today, under the expert leadership of Dr. Swati Jadhav, we are Aurangabad's most trusted ophthalmology centre with over 18,000 successful surgeries.
+              Shree Netralaya was established in 2016 with a single mission: to make world-class eye care accessible to every family in Marathwada. Today, under the expert leadership of Dr. Swati Jadhav, we are Aurangabad's most trusted ophthalmology centre with over 2,000 successful surgeries.
             </p>
             <p className="text-slate-500 text-[15px] leading-[1.85]">
               Dr. Jadhav, a Gold Medalist from GMC Nagpur and trained at the prestigious Aravind Eye Hospital, brings a decade of surgical excellence. Our state-of-the-art facility is matched only by her warmth and dedication to patient care.
@@ -727,7 +741,7 @@ export default function App() {
                 
                 <div className="space-y-4 mb-10">
                   <p className="text-slate-600 text-base md:text-lg leading-[1.75]">
-                    A distinguished <span className="text-ink font-semibold">Gold Medalist</span> from GMC Nagpur and trained at the world-renowned <span className="text-ink font-semibold">Aravind Eye Hospital</span>. Dr. Swati Jadhav brings over a decade of surgical excellence and compassionate care to Shree Netralaya.
+                    Dr. Jadhav, a <span className="text-ink font-semibold">Gold Medalist</span> from GMC Nagpur and trained at the prestigious <span className="text-ink font-semibold">Aravind Eye Hospital</span>, brings a decade of surgical excellence. Our state-of-the-art facility is matched only by her warmth and dedication to patient care.
                   </p>
                 </div>
 
@@ -1038,7 +1052,21 @@ export default function App() {
             <a href="#" className="font-serif text-xl text-white font-bold flex items-center gap-2.5 tracking-tight mb-3.5">
             <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
               {ASSETS.logo.url ? (
-                <img src={ASSETS.logo.url} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                <img 
+                  src={ASSETS.logo.url} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain" 
+                  referrerPolicy="no-referrer" 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    const parent = (e.target as HTMLImageElement).parentElement;
+                    if (parent) {
+                      const icon = document.createElement('div');
+                      icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye text-teal-primary"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+                      parent.appendChild(icon.firstChild as Node);
+                    }
+                  }}
+                />
               ) : (
                 <Eye className="text-teal-primary w-5 h-5" />
               )}
